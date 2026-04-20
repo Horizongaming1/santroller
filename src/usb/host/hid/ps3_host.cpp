@@ -108,7 +108,7 @@ std::shared_ptr<UsbHostInterface> Ps3Host::open(std::shared_ptr<UsbHostDevice> l
     }
     if (isValid)
     {
-        auto intf = std::make_shared<Ps3Host>(dev_addr, itf_desc->bInterfaceNumber, list->m_id, isThirdParty, rb2, ion, subtype);
+        auto intf = std::make_shared<Ps3Host>(dev_addr, itf_desc->bInterfaceNumber, list->m_id, isThirdParty, rb2, ion, info->UsingReportIDs, subtype);
         uint8_t endpoints = itf_desc->bNumEndpoints;
         p_desc = tu_desc_next(p_desc);
         tusb_hid_descriptor_hid_t *x_desc =
@@ -166,45 +166,50 @@ bool Ps3Host::xfer_cb(uint8_t ep_addr, xfer_result_t result, uint32_t xferred_by
 
 bool Ps3Host::tick_digital(UsbButtonType type)
 {
+    uint8_t *report_buf = m_ep_in_buf;
+    if (m_has_report_id)
+    {
+        report_buf++;
+    }
     if (!m_third_party)
     {
         switch (type)
         {
         case UsbButtonA:
-            return ((PS3Gamepad_Data_t *)m_ep_in_buf)->a;
+            return ((PS3Gamepad_Data_t *)report_buf)->a;
         case UsbButtonB:
-            return ((PS3Gamepad_Data_t *)m_ep_in_buf)->b;
+            return ((PS3Gamepad_Data_t *)report_buf)->b;
         case UsbButtonX:
-            return ((PS3Gamepad_Data_t *)m_ep_in_buf)->x;
+            return ((PS3Gamepad_Data_t *)report_buf)->x;
         case UsbButtonY:
-            return ((PS3Gamepad_Data_t *)m_ep_in_buf)->y;
+            return ((PS3Gamepad_Data_t *)report_buf)->y;
         case UsbButtonLeftShoulder:
-            return ((PS3Gamepad_Data_t *)m_ep_in_buf)->leftShoulder;
+            return ((PS3Gamepad_Data_t *)report_buf)->leftShoulder;
         case UsbButtonRightShoulder:
-            return ((PS3Gamepad_Data_t *)m_ep_in_buf)->rightShoulder;
+            return ((PS3Gamepad_Data_t *)report_buf)->rightShoulder;
         case UsbButtonBack:
-            return ((PS3Gamepad_Data_t *)m_ep_in_buf)->back;
+            return ((PS3Gamepad_Data_t *)report_buf)->back;
         case UsbButtonStart:
-            return ((PS3Gamepad_Data_t *)m_ep_in_buf)->start;
+            return ((PS3Gamepad_Data_t *)report_buf)->start;
         case UsbButtonLeftThumbClick:
-            return ((PS3Gamepad_Data_t *)m_ep_in_buf)->leftThumbClick;
+            return ((PS3Gamepad_Data_t *)report_buf)->leftThumbClick;
         case UsbButtonRightThumbClick:
-            return ((PS3Gamepad_Data_t *)m_ep_in_buf)->rightThumbClick;
+            return ((PS3Gamepad_Data_t *)report_buf)->rightThumbClick;
         case UsbButtonGuide:
-            return ((PS3Gamepad_Data_t *)m_ep_in_buf)->guide;
+            return ((PS3Gamepad_Data_t *)report_buf)->guide;
         case UsbButtonDpadUp:
-            return ((PS3Gamepad_Data_t *)m_ep_in_buf)->dpadUp;
+            return ((PS3Gamepad_Data_t *)report_buf)->dpadUp;
         case UsbButtonDpadDown:
-            return ((PS3Gamepad_Data_t *)m_ep_in_buf)->dpadDown;
+            return ((PS3Gamepad_Data_t *)report_buf)->dpadDown;
         case UsbButtonDpadLeft:
-            return ((PS3Gamepad_Data_t *)m_ep_in_buf)->dpadLeft;
+            return ((PS3Gamepad_Data_t *)report_buf)->dpadLeft;
         case UsbButtonDpadRight:
-            return ((PS3Gamepad_Data_t *)m_ep_in_buf)->dpadRight;
+            return ((PS3Gamepad_Data_t *)report_buf)->dpadRight;
         default:
             return false;
         }
     }
-    PS3Dpad_Data_t *report = (PS3Dpad_Data_t *)m_ep_in_buf;
+    PS3Dpad_Data_t *report = (PS3Dpad_Data_t *)report_buf;
     uint8_t dpad = report->dpad >= 0x08 ? 0 : dpad_bindings_reverse[report->dpad];
     asm volatile("" ::
                      : "memory");
@@ -218,21 +223,21 @@ bool Ps3Host::tick_digital(UsbButtonType type)
         switch (type)
         {
         case UsbButtonGreen:
-            return ((PS3GuitarHeroGuitar_Data_t *)m_ep_in_buf)->a;
+            return ((PS3GuitarHeroGuitar_Data_t *)report_buf)->a;
         case UsbButtonRed:
-            return ((PS3GuitarHeroGuitar_Data_t *)m_ep_in_buf)->b;
+            return ((PS3GuitarHeroGuitar_Data_t *)report_buf)->b;
         case UsbButtonYellow:
-            return ((PS3GuitarHeroGuitar_Data_t *)m_ep_in_buf)->y;
+            return ((PS3GuitarHeroGuitar_Data_t *)report_buf)->y;
         case UsbButtonBlue:
-            return ((PS3GuitarHeroGuitar_Data_t *)m_ep_in_buf)->x;
+            return ((PS3GuitarHeroGuitar_Data_t *)report_buf)->x;
         case UsbButtonOrange:
-            return ((PS3GuitarHeroGuitar_Data_t *)m_ep_in_buf)->leftShoulder;
+            return ((PS3GuitarHeroGuitar_Data_t *)report_buf)->leftShoulder;
         case UsbButtonBack:
-            return ((PS3GuitarHeroGuitar_Data_t *)m_ep_in_buf)->back;
+            return ((PS3GuitarHeroGuitar_Data_t *)report_buf)->back;
         case UsbButtonStart:
-            return ((PS3GuitarHeroGuitar_Data_t *)m_ep_in_buf)->start;
+            return ((PS3GuitarHeroGuitar_Data_t *)report_buf)->start;
         case UsbButtonGuide:
-            return ((PS3GuitarHeroGuitar_Data_t *)m_ep_in_buf)->guide;
+            return ((PS3GuitarHeroGuitar_Data_t *)report_buf)->guide;
         case UsbButtonDpadUp:
         case UsbButtonStrumUp:
             return up;
@@ -251,21 +256,21 @@ bool Ps3Host::tick_digital(UsbButtonType type)
         switch (type)
         {
         case UsbButtonGreen:
-            return ((PS3RockBandGuitar_Data_t *)m_ep_in_buf)->a;
+            return ((PS3RockBandGuitar_Data_t *)report_buf)->a;
         case UsbButtonRed:
-            return ((PS3RockBandGuitar_Data_t *)m_ep_in_buf)->b;
+            return ((PS3RockBandGuitar_Data_t *)report_buf)->b;
         case UsbButtonYellow:
-            return ((PS3RockBandGuitar_Data_t *)m_ep_in_buf)->y;
+            return ((PS3RockBandGuitar_Data_t *)report_buf)->y;
         case UsbButtonBlue:
-            return ((PS3RockBandGuitar_Data_t *)m_ep_in_buf)->x;
+            return ((PS3RockBandGuitar_Data_t *)report_buf)->x;
         case UsbButtonOrange:
-            return ((PS3RockBandGuitar_Data_t *)m_ep_in_buf)->leftShoulder;
+            return ((PS3RockBandGuitar_Data_t *)report_buf)->leftShoulder;
         case UsbButtonBack:
-            return ((PS3RockBandGuitar_Data_t *)m_ep_in_buf)->back;
+            return ((PS3RockBandGuitar_Data_t *)report_buf)->back;
         case UsbButtonStart:
-            return ((PS3RockBandGuitar_Data_t *)m_ep_in_buf)->start;
+            return ((PS3RockBandGuitar_Data_t *)report_buf)->start;
         case UsbButtonGuide:
-            return ((PS3RockBandGuitar_Data_t *)m_ep_in_buf)->guide;
+            return ((PS3RockBandGuitar_Data_t *)report_buf)->guide;
         case UsbButtonDpadUp:
         case UsbButtonStrumUp:
             return up;
@@ -284,27 +289,27 @@ bool Ps3Host::tick_digital(UsbButtonType type)
         switch (type)
         {
         case UsbButtonBlack1:
-            return ((PS3GHLGuitar_Data_t *)m_ep_in_buf)->a;
+            return ((PS3GHLGuitar_Data_t *)report_buf)->a;
         case UsbButtonBlack2:
-            return ((PS3GHLGuitar_Data_t *)m_ep_in_buf)->b;
+            return ((PS3GHLGuitar_Data_t *)report_buf)->b;
         case UsbButtonBlack3:
-            return ((PS3GHLGuitar_Data_t *)m_ep_in_buf)->y;
+            return ((PS3GHLGuitar_Data_t *)report_buf)->y;
         case UsbButtonWhite1:
-            return ((PS3GHLGuitar_Data_t *)m_ep_in_buf)->x;
+            return ((PS3GHLGuitar_Data_t *)report_buf)->x;
         case UsbButtonWhite2:
-            return ((PS3GHLGuitar_Data_t *)m_ep_in_buf)->leftShoulder;
+            return ((PS3GHLGuitar_Data_t *)report_buf)->leftShoulder;
         case UsbButtonWhite3:
-            return ((PS3GHLGuitar_Data_t *)m_ep_in_buf)->rightShoulder;
+            return ((PS3GHLGuitar_Data_t *)report_buf)->rightShoulder;
         case UsbButtonBack:
-            return ((PS3GHLGuitar_Data_t *)m_ep_in_buf)->back;
+            return ((PS3GHLGuitar_Data_t *)report_buf)->back;
         case UsbButtonStart:
-            return ((PS3GHLGuitar_Data_t *)m_ep_in_buf)->start;
+            return ((PS3GHLGuitar_Data_t *)report_buf)->start;
         case UsbButtonGuide:
-            return ((PS3GHLGuitar_Data_t *)m_ep_in_buf)->guide;
+            return ((PS3GHLGuitar_Data_t *)report_buf)->guide;
         case UsbButtonStrumUp:
-            return ((PS3GHLGuitar_Data_t *)m_ep_in_buf)->strumBar == 0x00;
+            return ((PS3GHLGuitar_Data_t *)report_buf)->strumBar == 0x00;
         case UsbButtonStrumDown:
-            return ((PS3GHLGuitar_Data_t *)m_ep_in_buf)->strumBar == 0xFF;
+            return ((PS3GHLGuitar_Data_t *)report_buf)->strumBar == 0xFF;
         case UsbButtonDpadUp:
             return up;
         case UsbButtonDpadDown:
@@ -321,27 +326,27 @@ bool Ps3Host::tick_digital(UsbButtonType type)
         switch (type)
         {
         case UsbButtonA:
-            return ((PS3ThirdPartyGamepad_Data_t *)m_ep_in_buf)->a;
+            return ((PS3ThirdPartyGamepad_Data_t *)report_buf)->a;
         case UsbButtonB:
-            return ((PS3ThirdPartyGamepad_Data_t *)m_ep_in_buf)->b;
+            return ((PS3ThirdPartyGamepad_Data_t *)report_buf)->b;
         case UsbButtonX:
-            return ((PS3ThirdPartyGamepad_Data_t *)m_ep_in_buf)->x;
+            return ((PS3ThirdPartyGamepad_Data_t *)report_buf)->x;
         case UsbButtonY:
-            return ((PS3ThirdPartyGamepad_Data_t *)m_ep_in_buf)->y;
+            return ((PS3ThirdPartyGamepad_Data_t *)report_buf)->y;
         case UsbButtonLeftShoulder:
-            return ((PS3ThirdPartyGamepad_Data_t *)m_ep_in_buf)->leftShoulder;
+            return ((PS3ThirdPartyGamepad_Data_t *)report_buf)->leftShoulder;
         case UsbButtonRightShoulder:
-            return ((PS3ThirdPartyGamepad_Data_t *)m_ep_in_buf)->rightShoulder;
+            return ((PS3ThirdPartyGamepad_Data_t *)report_buf)->rightShoulder;
         case UsbButtonBack:
-            return ((PS3ThirdPartyGamepad_Data_t *)m_ep_in_buf)->back;
+            return ((PS3ThirdPartyGamepad_Data_t *)report_buf)->back;
         case UsbButtonStart:
-            return ((PS3ThirdPartyGamepad_Data_t *)m_ep_in_buf)->start;
+            return ((PS3ThirdPartyGamepad_Data_t *)report_buf)->start;
         case UsbButtonLeftThumbClick:
-            return ((PS3ThirdPartyGamepad_Data_t *)m_ep_in_buf)->leftThumbClick;
+            return ((PS3ThirdPartyGamepad_Data_t *)report_buf)->leftThumbClick;
         case UsbButtonRightThumbClick:
-            return ((PS3ThirdPartyGamepad_Data_t *)m_ep_in_buf)->rightThumbClick;
+            return ((PS3ThirdPartyGamepad_Data_t *)report_buf)->rightThumbClick;
         case UsbButtonGuide:
-            return ((PS3ThirdPartyGamepad_Data_t *)m_ep_in_buf)->guide;
+            return ((PS3ThirdPartyGamepad_Data_t *)report_buf)->guide;
         case UsbButtonDpadUp:
             return up;
         case UsbButtonDpadDown:
@@ -360,17 +365,22 @@ bool Ps3Host::tick_digital(UsbButtonType type)
 }
 uint16_t Ps3Host::tick_analog(UsbAxisType type)
 {
+    uint8_t *report_buf = m_ep_in_buf;
+    if (m_has_report_id)
+    {
+        report_buf++;
+    }
     switch (m_subtype)
     {
     case GuitarHeroGuitar:
         switch (type)
         {
         case UsbAxisWhammy:
-            return ((PS3GuitarHeroGuitar_Data_t *)m_ep_in_buf)->whammy << 8;
+            return ((PS3GuitarHeroGuitar_Data_t *)report_buf)->whammy << 8;
         case UsbAxisTilt:
-            return ((PS3GuitarHeroGuitar_Data_t *)m_ep_in_buf)->tilt << 2;
+            return ((PS3GuitarHeroGuitar_Data_t *)report_buf)->tilt << 2;
         case UsbAxisSlider:
-            return ((PS3GuitarHeroGuitar_Data_t *)m_ep_in_buf)->slider << 8;
+            return ((PS3GuitarHeroGuitar_Data_t *)report_buf)->slider << 8;
         default:
             return 0;
         }
@@ -379,9 +389,9 @@ uint16_t Ps3Host::tick_analog(UsbAxisType type)
         switch (type)
         {
         case UsbAxisWhammy:
-            return ((PS3GHLGuitar_Data_t *)m_ep_in_buf)->whammy << 8;
+            return ((PS3GHLGuitar_Data_t *)report_buf)->whammy << 8;
         case UsbAxisTilt:
-            return ((PS3GHLGuitar_Data_t *)m_ep_in_buf)->tilt << 2;
+            return ((PS3GHLGuitar_Data_t *)report_buf)->tilt << 2;
         default:
             return 0;
         }
@@ -390,11 +400,11 @@ uint16_t Ps3Host::tick_analog(UsbAxisType type)
         switch (type)
         {
         case UsbAxisWhammy:
-            return ((PS3RockBandGuitar_Data_t *)m_ep_in_buf)->whammy << 8;
+            return ((PS3RockBandGuitar_Data_t *)report_buf)->whammy << 8;
         case UsbAxisTilt:
-            return ((PS3RockBandGuitar_Data_t *)m_ep_in_buf)->tilt << 8;
+            return ((PS3RockBandGuitar_Data_t *)report_buf)->tilt << 8;
         case UsbAxisPickup:
-            return ((PS3RockBandGuitar_Data_t *)m_ep_in_buf)->pickup << 8;
+            return ((PS3RockBandGuitar_Data_t *)report_buf)->pickup << 8;
         default:
             return 0;
         }
@@ -402,17 +412,17 @@ uint16_t Ps3Host::tick_analog(UsbAxisType type)
         switch (type)
         {
         case UsbAxisLeftTrigger:
-            return ((PS3Gamepad_Data_t *)m_ep_in_buf)->leftTrigger << 8;
+            return ((PS3Gamepad_Data_t *)report_buf)->leftTrigger << 8;
         case UsbAxisRightTrigger:
-            return ((PS3Gamepad_Data_t *)m_ep_in_buf)->rightTrigger << 8;
+            return ((PS3Gamepad_Data_t *)report_buf)->rightTrigger << 8;
         case UsbAxisLeftStickX:
-            return ((PS3Gamepad_Data_t *)m_ep_in_buf)->leftStickX << 8;
+            return ((PS3Gamepad_Data_t *)report_buf)->leftStickX << 8;
         case UsbAxisLeftStickY:
-            return ((PS3Gamepad_Data_t *)m_ep_in_buf)->leftStickY << 8;
+            return ((PS3Gamepad_Data_t *)report_buf)->leftStickY << 8;
         case UsbAxisRightStickX:
-            return ((PS3Gamepad_Data_t *)m_ep_in_buf)->rightStickX << 8;
+            return ((PS3Gamepad_Data_t *)report_buf)->rightStickX << 8;
         case UsbAxisRightStickY:
-            return ((PS3Gamepad_Data_t *)m_ep_in_buf)->rightStickY << 8;
+            return ((PS3Gamepad_Data_t *)report_buf)->rightStickY << 8;
         default:
             return 0;
         }

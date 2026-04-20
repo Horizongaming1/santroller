@@ -30,7 +30,7 @@ class Ps3Host : public HidHost
 {
 public:
     ~Ps3Host() {}
-    Ps3Host(uint8_t dev_addr, uint8_t interface, uint16_t id, bool third_party, bool rb2, bool ion, SubType subtype) : HidHost(dev_addr, interface, id), m_rb2(rb2), m_ion(ion), m_third_party(third_party)
+    Ps3Host(uint8_t dev_addr, uint8_t interface, uint16_t id, bool third_party, bool rb2, bool ion, bool has_report_id, SubType subtype) : HidHost(dev_addr, interface, id), m_rb2(rb2), m_ion(ion), m_wt(false), m_third_party(third_party), m_has_report_id(has_report_id)
     {
         m_subtype = subtype;
     }
@@ -46,6 +46,7 @@ private:
     bool m_ion;
     bool m_wt;
     bool m_third_party;
+    bool m_has_report_id;
     uint8_t m_ep_in = 0;
     uint8_t m_ep_out = 0;
     uint8_t m_ep_in_size;
